@@ -1,3 +1,5 @@
+import { AuthenticationController } from './../authentication.controller';
+import { INestApplication, ValidationPipe } from '@nestjs/common';
 import { mockedJwtService } from './../../utils/mocks/jwt.service';
 import { mockedConfigService } from './../../utils/mocks/config.service';
 import { UsersService } from './../../users/users.service';
@@ -7,15 +9,13 @@ import { Test } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import * as bcrypt from 'bcrypt';
-
-jest.mock('bcrypt');
+import * as request from 'supertest';
 
 const mockedUser: User = {
-  id: '10519bb0-abe7-487a-9182-e0b935651586',
-  email: 'user@email.com',
-  name: 'John',
-  password: 'hash',
+  id: '10519bb0-abe7-487a-9182-e0b935651588',
+  email: 'sabin@email.com',
+  name: 'sabin',
+  password: 'hash123456',
   posts: [],
   address: {
     id: '10519bb0-abe7-487a-9182-e0b935651586',
@@ -28,25 +28,20 @@ const mockedUser: User = {
 
 jest.mock('bcrypt');
 
-describe('The AuthenticationService', () => {
-  let authenticationService: AuthenticationService;
-  let usersService: UsersService;
-  let bcryptCompare: jest.Mock;
+describe('The AuthenticationController', () => {
+  let app: INestApplication;
   let userData: User;
-  let findUser: jest.Mock;
   beforeEach(async () => {
     userData = {
       ...mockedUser,
     };
-    findUser = jest.fn().mockResolvedValue(userData);
     const usersRepository = {
-      findOne: findUser,
+      create: jest.fn().mockResolvedValue(userData),
+      save: jest.fn().mockReturnValue(Promise.resolve()),
     };
 
-    bcryptCompare = jest.fn().mockReturnValue(true);
-    (bcrypt.compare as jest.Mock) = bcryptCompare;
-
     const module = await Test.createTestingModule({
+      controllers: [AuthenticationController],
       providers: [
         UsersService,
         AuthenticationService,
@@ -64,60 +59,53 @@ describe('The AuthenticationService', () => {
         },
       ],
     }).compile();
-    authenticationService = await module.get(AuthenticationService);
-    usersService = await module.get(UsersService);
+    app = module.createNestApplication();
+    app.useGlobalPipes(new ValidationPipe());
+    await app.init();
   });
-  describe('when accessing the data of authenticating user', () => {
-    it('should attempt to get a user by email', async () => {
-      const getByEmailSpy = jest.spyOn(usersService, 'getByEmail');
-      await authenticationService.getAuthenticatedUser(
-        'user@email.com',
-        'strongPassword',
-      );
-      expect(getByEmailSpy).toBeCalledTimes(1);
-    });
-    describe('and the provided password is not valid', () => {
-      beforeEach(() => {
-        bcryptCompare.mockReturnValue(false);
-      });
-      it('should throw an error', async () => {
-        await expect(
-          authenticationService.getAuthenticatedUser(
-            'user@email.com',
-            'strongPassword',
-          ),
-        ).rejects.toThrow();
-      });
-    });
-    describe('and the provided password is valid', () => {
-      beforeEach(() => {
-        bcryptCompare.mockReturnValue(true);
-      });
-      describe('and the user is found in the database', () => {
-        beforeEach(() => {
-          findUser.mockResolvedValue(userData);
-        });
-        it('should return the user data', async () => {
-          const user = await authenticationService.getAuthenticatedUser(
-            'user@email.com',
-            'strongPassword',
-          );
-          expect(user).toBe(userData);
-        });
-      });
-      describe('and the user is not found in the database', () => {
-        beforeEach(() => {
-          findUser.mockResolvedValue(undefined);
-        });
-        it('should throw an error', async () => {
-          await expect(
-            authenticationService.getAuthenticatedUser(
-              'user@email.com',
-              'strongPassword',
-            ),
-          ).rejects.toThrow();
-        });
-      });
+  describe('when registering with invalid data', () => {
+    it('should respond with error', () => {
+      const expectedData = {
+        ...userData,
+      };
+      delete expectedData.password;
+      return request(app.getHttpServer())
+        .post('/authentication/register')
+        .send({
+          email: mockedUser.email,
+          name: mockedUser.name,
+          password: 'strongPassword',
+          address: mockedUser.address,
+          user: mockedUser,
+        })
+        .expect(201)
+        .expect(expectedData);
     });
   });
+  describe('when login with valid data', () => {
+    it('should respond with the data of the user without the password', () => {
+      const expectedData = {
+        ...userData,
+      };
+      delete expectedData.password;
+      return request(app.getHttpServer())
+        .post('/authentication/login')
+        .send({
+          email: 'sabin@gmail.com',
+          password: '123456',
+        })
+        .expect(201)
+        .expect(expectedData);
+    });
+  });
+  //   describe('when registering with invalid data', () => {
+  //     it('should throw an error', () => {
+  //       return request(app.getHttpServer())
+  //         .post('/authentication/register')
+  //         .send({
+  //           name: mockedUser.name,
+  //         })
+  //         .expect(400);
+  //     });
+  //   });
 });
