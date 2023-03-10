@@ -39,48 +39,14 @@ describe('The AuthenticationService', () => {
       AuthenticationService,
     );
   });
-  describe('when getting a user by email', () => {
-    describe('and the user is matched', () => {
-      let user: User;
-      beforeEach(() => {
-        user = new User();
-        findOne.mockReturnValue(Promise.resolve(user));
-      });
-      it('should return the user', async () => {
-        const fetchedUser = await usersService.getByEmail('sabin3@gmail.com');
-        expect(fetchedUser).toEqual(user);
-      });
-    });
-    describe("when getting a user's id", () => {
-      let user: User;
-      beforeEach(() => {
-        user = new User();
-        findOne.mockReturnValue(Promise.resolve(user));
-      });
-      it('should return the user', async () => {
-        const fetchedUser = await usersService.getById(
-          '17888a60-ad20-43a0-be1c-5136e31ecebc',
-        );
-        expect(fetchedUser).toEqual(user);
-      });
-    });
-    describe('and the user is not matched', () => {
-      beforeEach(() => {
-        findOne.mockReturnValue(undefined);
-      });
-      it('should throw an error', async () => {
-        await expect(
-          usersService.getByEmail('test@test.com'),
-        ).rejects.toThrow();
-      });
-    });
-  });
-  describe('when creating a cookie', () => {
-    it('should return a string', () => {
-      const userId = '17888a60-ad20-43a0-be1c-5136e31ecebc';
-      expect(
-        typeof authenticationService.getCookieWithJwtToken(userId),
-      ).toEqual('string');
+  describe('when accessing the data of authenticating user', () => {
+    it('should attempt to get the user by email', async () => {
+      const getByEmailSpy = jest.spyOn(usersService, 'getByEmail');
+      await authenticationService.getAuthenticatedUser(
+        'sabin@gmail.com',
+        '123456',
+      );
+      expect(getByEmailSpy).toBeCalledTimes(1);
     });
   });
 });

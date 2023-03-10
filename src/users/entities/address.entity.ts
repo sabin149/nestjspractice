@@ -6,7 +6,7 @@ import { Expose } from 'class-transformer';
 @Expose()
 class Address {
   @PrimaryGeneratedColumn('uuid')
-  public id: number;
+  public id: string;
 
   @Column()
   public street: string;
