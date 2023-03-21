@@ -8,6 +8,8 @@ import { UsersModule } from './users/users.module';
 import { AuthenticationModule } from './authentication/authentication.module';
 import { CategoriesModule } from './categories/categories.module';
 import { SubscribersModule } from './subscribers/subscribers.module';
+import { ProductCategoriesModule } from './product-categories/product-categories.module';
+import { ProductsModule } from './products/products.module';
 
 import * as Joi from '@hapi/joi';
 
@@ -28,6 +30,10 @@ import * as Joi from '@hapi/joi';
         PORT: Joi.number(),
         SUBSCRIBERS_SERVICE_HOST: Joi.string().required(),
         SUBSCRIBERS_SERVICE_PORT: Joi.number().required(),
+        RABBITMQ_USER: Joi.string(),
+        RABBITMQ_PASSWORD: Joi.string(),
+        RABBITMQ_HOST: Joi.string(),
+        RABBITMQ_QUEUE_NAME: Joi.string(),
       }),
       isGlobal: true,
       cache: true,
@@ -37,6 +43,8 @@ import * as Joi from '@hapi/joi';
     AuthenticationModule,
     CategoriesModule,
     SubscribersModule,
+    ProductCategoriesModule,
+    ProductsModule,
   ],
 
   controllers: [AppController],

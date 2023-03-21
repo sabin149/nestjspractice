@@ -10,7 +10,6 @@ import {
   ClassSerializerInterceptor,
   Inject,
 } from '@nestjs/common';
-
 import { ClientProxy } from '@nestjs/microservices';
 
 @Controller('subscribers')
@@ -34,8 +33,7 @@ export class SubscribersController {
   @Post()
   @UseGuards(JwtAuthenticationGuard)
   async createPost(@Body() subscriber: CreateSubscriberDto) {
-    console.log(subscriber);
-    return this.subscribersService.emit(
+    return this.subscribersService.send(
       {
         cmd: 'add-subscriber',
       },
