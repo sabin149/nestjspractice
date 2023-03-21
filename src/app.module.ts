@@ -7,6 +7,8 @@ import { ConfigModule } from '@nestjs/config';
 import { UsersModule } from './users/users.module';
 import { AuthenticationModule } from './authentication/authentication.module';
 import { CategoriesModule } from './categories/categories.module';
+import { SubscribersModule } from './subscribers/subscribers.module';
+
 import * as Joi from '@hapi/joi';
 
 @Module({
@@ -19,9 +21,13 @@ import * as Joi from '@hapi/joi';
         POSTGRES_USER: Joi.string().required(),
         POSTGRES_PASSWORD: Joi.string().required(),
         POSTGRES_DB: Joi.string().required(),
-        JWT_SECRET: Joi.string().required(),
-        JWT_EXPIRATION_TIME: Joi.string().required(),
+        JWT_ACCESS_TOKEN_SECRET: Joi.string().required(),
+        JWT_ACCESS_TOKEN_EXPIRATION_TIME: Joi.string().required(),
+        JWT_REFRESH_TOKEN_SECRET: Joi.string().required(),
+        JWT_REFRESH_TOKEN_EXPIRATION_TIME: Joi.string().required(),
         PORT: Joi.number(),
+        SUBSCRIBERS_SERVICE_HOST: Joi.string().required(),
+        SUBSCRIBERS_SERVICE_PORT: Joi.number().required(),
       }),
       isGlobal: true,
       cache: true,
@@ -30,6 +36,7 @@ import * as Joi from '@hapi/joi';
     UsersModule,
     AuthenticationModule,
     CategoriesModule,
+    SubscribersModule,
   ],
 
   controllers: [AppController],

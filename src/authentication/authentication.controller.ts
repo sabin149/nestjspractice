@@ -1,3 +1,5 @@
+import { JwtRefreshGuard } from './guards/jwt-refresh.guard';
+import { UsersService } from './../users/users.service';
 import { JwtAuthenticationGuard } from './guards/jwt-authentication.guard';
 import { RequestWithUser } from './interface/requestWithUser.interface';
 import {
@@ -21,7 +23,10 @@ import { LocalAuthenticationGuard } from './guards/local-authentication.guard';
   strategy: 'excludeAll',
 })
 export class AuthenticationController {
-  constructor(private readonly authenticationService: AuthenticationService) {}
+  constructor(
+    private readonly authenticationService: AuthenticationService,
+    private readonly usersService: UsersService,
+  ) {}
 
   @Post('register')
   async register(@Body() registrationData: RegisterDto) {
@@ -31,22 +36,31 @@ export class AuthenticationController {
   @HttpCode(200)
   @UseGuards(LocalAuthenticationGuard)
   @Post('login')
-  async logIn(@Req() request: RequestWithUser, @Res() response: Response) {
+  async logIn(@Req() request: RequestWithUser) {
     const { user } = request;
-    const cookie = this.authenticationService.getCookieWithJwtToken(user.id);
-    response.setHeader('Set-Cookie', cookie);
-    user.password = undefined;
-    return response.send(user);
+    const accessTokenCookie =
+      this.authenticationService.getCookieWithJwtAccessToken(user.id);
+    const { cookie: refreshTokenCookie, token: refreshToken } =
+      this.authenticationService.getCookieWithJwtRefreshToken(user.id);
+
+    await this.usersService.setCurrentRefreshToken(refreshToken, user.id);
+
+    request.res.setHeader('Set-Cookie', [
+      accessTokenCookie,
+      refreshTokenCookie,
+    ]);
+    return user;
   }
 
   @UseGuards(JwtAuthenticationGuard)
   @Post('logout')
-  async logOut(@Res() response: Response) {
-    response.setHeader(
+  @HttpCode(200)
+  async logOut(@Req() request: RequestWithUser) {
+    await this.usersService.removeRefreshToken(request.user.id);
+    request.res.setHeader(
       'Set-Cookie',
-      this.authenticationService.getCookieForLogOut(),
+      this.authenticationService.getCookiesForLogOut(),
     );
-    return response.sendStatus(200);
   }
 
   @UseGuards(JwtAuthenticationGuard)
@@ -55,5 +69,14 @@ export class AuthenticationController {
     const user = request.user;
     user.password = undefined;
     return user;
+  }
+
+  @UseGuards(JwtRefreshGuard)
+  @Get('refresh')
+  refresh(@Req() request: RequestWithUser) {
+    const accessTokenCookie =
+      this.authenticationService.getCookieWithJwtAccessToken(request.user.id);
+    request.res.setHeader('Set-Cookie', accessTokenCookie);
+    return request.user;
   }
 }

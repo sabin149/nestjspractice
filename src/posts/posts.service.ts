@@ -1,9 +1,9 @@
 import { User } from './../users/entities/user.entity';
-import { HttpException, HttpStatus, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { CreatePostDto } from './dto/create-post.dto';
 import { UpdatePostDto } from './dto/update-post.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { FindManyOptions, Repository, MoreThan } from 'typeorm';
 import { PostEntity } from './entities/post.entity';
 import PostNotFoundException from './exceptions/postNotFound.exception';
 
@@ -12,8 +12,28 @@ export class PostsService {
   @InjectRepository(PostEntity)
   private postsRepository: Repository<PostEntity>;
 
-  getAllPosts() {
-    return this.postsRepository.find({ relations: ['author'] });
+  async getAllPosts(offset?: number, limit?: number, startId?: string) {
+    const where: FindManyOptions<PostEntity>['where'] = {};
+    let separateCount = 0;
+    if (startId) {
+      where.id = MoreThan(startId);
+      separateCount = await this.postsRepository.count();
+    }
+
+    const [items, count] = await this.postsRepository.findAndCount({
+      where,
+      relations: ['author'],
+      order: {
+        id: 'ASC',
+      },
+      skip: offset,
+      take: limit,
+    });
+
+    return {
+      items,
+      count: startId ? separateCount : count,
+    };
   }
 
   async getPostById(id: string) {
@@ -53,5 +73,36 @@ export class PostsService {
     if (!deleteResponse.affected) {
       throw new PostNotFoundException(id);
     }
+  }
+
+  async searchForPosts(
+    search: string,
+    offset?: number,
+    limit?: number,
+    startId?: string,
+  ) {
+    const where: FindManyOptions<PostEntity>['where'] = {
+      title: search,
+    };
+    let separateCount = 0;
+    if (startId) {
+      where.id = MoreThan(startId);
+      separateCount = await this.postsRepository.count();
+    }
+
+    const [items, count] = await this.postsRepository.findAndCount({
+      where,
+      relations: ['author'],
+      order: {
+        id: 'ASC',
+      },
+      skip: offset,
+      take: limit,
+    });
+
+    return {
+      items,
+      count: startId ? separateCount : count,
+    };
   }
 }

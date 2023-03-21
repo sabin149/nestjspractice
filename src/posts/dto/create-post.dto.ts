@@ -2,9 +2,10 @@ import { CreateCategoryDto } from './../../categories/dto/create-category.dto';
 import { IsString, IsNotEmpty, IsArray } from 'class-validator';
 import { Type } from 'class-transformer';
 export class CreatePostDto {
-  @IsString()
+  @IsString({ each: true })
   @IsNotEmpty()
-  content: string;
+  @IsArray()
+  paragraphs: string[];
 
   @IsString()
   @IsNotEmpty()

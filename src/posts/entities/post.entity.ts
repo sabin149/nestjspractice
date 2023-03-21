@@ -7,6 +7,7 @@ import {
   JoinTable,
   ManyToMany,
   ManyToOne,
+  Index,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 
@@ -19,12 +20,13 @@ export class PostEntity {
   @Column()
   public title: string;
 
-  @Column()
-  public content: string;
+  @Column('text', { array: true })
+  public paragraphs: string[];
 
   @Column({ nullable: true })
   public category?: string;
 
+  @Index('post_authorId_index')
   @ManyToOne(() => User, (author: User) => author.posts)
   public author: User;
 
